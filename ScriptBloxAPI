@@ -1,0 +1,130 @@
+Functions = {}
+
+ScriptBlox = "https://scriptblox.com"
+API = ScriptBlox .. "/api/"
+
+FetchUrl = function(url)
+    assert(game.HttpGet, "HttpGet is not supported on your executor.")
+    assert(url, "URL resolves to nil")
+
+    url = tostring(url)
+
+    local response = game:HttpGet(url)
+    local json = game:GetService("HttpService"):JSONDecode(response)
+    
+    return json
+end
+
+RawSearch = function(query, page, max, free)
+    local url = API .. "search?q=" .. tostring(query):gsub(" ", "+") .. "&page=" .. tostring(page) .. "&max=" .. tostring(max) .. ("&mode=free" and free)
+    return FetchUrl(url)
+end
+
+function Functions:Search(query, page, max, free)
+    assert(query, "Query resolves to nil.")
+
+    page = page or 1
+    max = max or 10
+    free = free or false
+
+    assert(type(page) == "number" and math.floor(page) == page, "\"page\" must be an integer.")
+    assert(type(max) == "number" and math.floor(max) == max, "\"max\" must be an integer.")
+
+    local result = RawSearch(query, page, max, free).result
+
+    assert(result, "API did not return a result.")
+
+    return result
+end
+
+function Functions:FetchScripts(page)
+    page = page or 1
+
+    return FetchUrl(API .. "script/fetch?page" .. page)
+end
+
+function Functions:GetLatestScript(result)
+    assert(result or type(result) == "table", "Result resolves to nil or is not a table.")
+    assert(result.scripts or type(result.scripts), "Result is not a valid table.")
+
+    return result.scripts[1]
+end
+
+function Functions:GetScripts(result, predicate)
+    assert(result and type(result) == "table", "Result resolves to nil or is not a table.")
+    assert(result.scripts and type(result.scripts) == "table", "Result is not a valid table.")
+    assert(type(predicate) == "function", "Predicate must be a function.")
+
+    local scripts = result.scripts
+    local filteredScripts = {}
+
+    for _, script in next, scripts do
+        if predicate(script) then
+            table.insert(filteredScripts, script)
+        end
+    end
+
+    return filteredScripts
+end
+
+function Functions:FetchTitle(script)
+    return script.title or nil
+end
+
+function Functions:FetchCode(script)
+    return script.script or nil
+end
+
+function Functions:FetchViews(script)
+    return script.views or nil
+end
+
+function Functions:HasKeySystem(script)
+    return script.key or nil
+end
+
+function Functions:FetchKeyLink(script)
+    if Functions:HasKeySystem(script) then
+        return script.keyLink
+    end
+    return nil
+end
+
+function Functions:ScriptIsVerified(script)
+    return script.verified or nil
+end
+
+function Functions:IsPaid(script)
+    if script.scriptType == "free" then
+        return false
+    end
+    return true
+end
+
+function Functions:IsUniversal(script)
+    return script.isUniversal or nil
+end
+
+function Functions:FetchSlug(script)
+    return FetchUrl(API .. "script/" .. script.slug)
+end
+
+function Functions:FetchCreator(slug)
+    assert(slug, "Slug resolves to nil.")
+
+    return slug.owner or nil
+end
+
+function Functions:FetchUsername(owner)
+    return owner.username or nil
+end
+
+function Functions:FetchProfilePicture(owner)
+    return owner.profilePicture or nil
+end
+
+function Functions:IsVerified(owner)
+    return owner.verified or nil
+end
+
+return Functions
