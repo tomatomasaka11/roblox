@@ -47,7 +47,9 @@ function Functions:GetLatestScript(result)
     assert(result or type(result) == "table", "Result resolves to nil or is not a table.")
     assert(result.scripts or type(result.scripts), "Result is not a valid table.")
 
-    return result.scripts[1]
+    local script = result.scripts[1]
+
+    return script
 end
 
 function Functions:GetScripts(result, predicate)
